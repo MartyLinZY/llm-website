@@ -5,11 +5,15 @@ import chainlit as cl
 import json
 
 # Load the API URL from the config file
+# chainlit create-secret before launching
 api_url =''
-
+username_local = ''
+password_local = ''
 with open('app.config', 'r') as config_file:
     config = json.load(config_file)
     api_url = config.get("apiUrl", "http://default-url.com")
+    username_local = config.get("username", "admin")
+    password_local = config.get("password", "password")
 
 
 client = AsyncOpenAI(
@@ -22,6 +26,20 @@ settings = {
     "temperature": 0.6,
     # ... more settings
 }
+
+from typing import Optional
+
+@cl.password_auth_callback
+def auth_callback(username: str, password: str):
+    # Fetch the user matching username from your database
+    # and compare the hashed password with the value stored in the database
+    if (username, password) == (username_local, password_local):
+        return cl.User(
+            identifier="admin", metadata={"role": "admin", "provider": "credentials"}
+        )
+    else:
+        return None
+
 
 @cl.on_message
 async def on_message(msg: cl.Message):
